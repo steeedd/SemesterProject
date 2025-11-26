@@ -1,0 +1,66 @@
+[
+  {
+    "Input": "You are a SQL expert. Your task is to answer the user’s question by generating a final SQL query. The schema of the database is provided in the user question. You have access to a tool called `query_db` that you can use to run exploratory queries on the database. Use it only if needed to check values and validate assumptions. When you perform exploratory queries, use LIMIT 3 if the output of the query may have more than 3 rows. Eventually, provide ONLY the final SQL query enclosed within the tags <answer> and </answer>, not the answer to the query. Evidence: work numbers refers to works.id; related to King Henry refers to Title = '%Henry%'. Question: What are the work numbers that are related to King Henry?",
+    "Output": "<answer>SELECT w.id FROM works w WHERE w.Title LIKE '%Henry%';",
+    "pred_SQL": "SELECT w.id FROM works w WHERE w.Title LIKE '%Henry%';",
+    "Target_SQL": "SELECT w.id FROM works w WHERE w.Title LIKE '%Henry%';",
+    "Execution_Accuracy": "100",
+    "evaluation": "0"
+  },
+  {
+    "Input": "You are a SQL expert. Your task is to answer the user’s question by generating a final SQL query. The schema of the database is provided in the user question. You have access to a tool called `query_db` that you can use to run exploratory queries on the database. Use it only if needed to check values and validate assumptions. When you perform exploratory queries, use LIMIT 3 if the output of the query may have more than 3 rows. Eventually, provide ONLY the final SQL query enclosed within the tags <answer> and </answer>, not the answer to the query. Evidence: comedic works refers to GenreType = 'comedy'. Question: Please name any three comedic works.",
+    "Output": "<answer>SELECT Title FROM works WHERE GenreType = 'comedy' LIMIT 3;<answer>",
+    "pred_SQL": "SELECT Title FROM works WHERE GenreType = 'comedy' LIMIT 3;",
+    "Target_SQL": "SELECT * FROM works w WHERE w.GenreType = 'Comedy' LIMIT 3;",
+    "Execution_Accuracy": "0",
+    "evaluation": "0"
+  },
+  {
+    "Input": "You are a SQL expert. Your task is to answer the user’s question by generating a final SQL query. The schema of the database is provided in the user question. You have access to a tool called `query_db` that you can use to run exploratory queries on the database. Use it only if needed to check values and validate assumptions. When you perform exploratory queries, use LIMIT 3 if the output of the query may have more than 3 rows. Eventually, provide ONLY the final SQL query enclosed within the tags <answer> and </answer>, not the answer to the query. Evidence: King John refers to Title = 'King John'. Question: How many scenes are there in King John?.",
+    "Output": "[CALL]: SELECT id FROM works WHERE Title = 'King John';  [ANS]: [{'id': 17}]  [CALL]: SELECT id, Act, Scene FROM chapters WHERE work_id = 17;  [ANS]: [{'id': 19077, 'Act': 1, 'Scene': 1}, {'id': 19078, 'Act': 2, 'Scene': 1}, {'id': 19079, 'Act': 3, 'Scene': 1}, {'id': 19080, 'Act': 3, 'Scene': 2}, {'id': 19081, 'Act': 3, 'Scene': 3}, {'id': 19082, 'Act': 3, 'Scene': 4}, {'id': 19083, 'Act': 4, 'Scene': 1}, {'id': 19084, 'Act': 4, 'Scene': 2}, {'id': 19085, 'Act': 4, 'Scene': 3}, {'id': 19086, 'Act': 5, 'Scene': 1}, {'id': 19087, 'Act': 5, 'Scene': 2}, {'id': 19088, 'Act': 5, 'Scene': 3}, {'id': 19089, 'Act': 5, 'Scene': 4}, {'id': 19090, 'Act': 5, 'Scene': 5}, {'id': 19091, 'Act': 5, 'Scene': 6}, {'id': 19092, 'Act': 5, 'Scene': 7}] [CALL]: SELECT COUNT(DISTINCT Scene) FROM chapters WHERE work_id = 17;  [ANS]: [{'COUNT(DISTINCT Scene)': 7}].  The total number of scenes in 'King John' is 7. <answer> SELECT COUNT(DISTINCT Scene) FROM chapters WHERE work_id = 17; </answer>",
+    "pred_SQL": "SELECT COUNT(DISTINCT Scene) FROM chapters WHERE work_id = 17",
+    "Target_SQL": "SELECT COUNT(*) AS n_Scenes FROM works w JOIN chapters c ON w.id = c.work_id WHERE w.Title = 'King John';",   
+    "Execution_Accuracy": "0",
+    "evaluation": "1"
+  },
+  {
+    "Input": "You are a SQL expert. Your task is to answer the user’s question by generating a final SQL query. The schema of the database is provided in the user question. You have access to a tool called `query_db` that you can use to run exploratory queries on the database. Use it only if needed to check values and validate assumptions. When you perform exploratory queries, use LIMIT 3 if the output of the query may have more than 3 rows. Eventually, provide ONLY the final SQL query enclosed within the tags <answer> and </answer>, not the answer to the query. Evidence: most paragraphs refers to max(count(chapter_id)). Question: Which chapter has the most paragraphs? Give the description of the chapter.",
+    "Output": "[STEP]To determine which chapter has the most paragraphs, we need to count the number of paragraphs per chapter and then identify the chapter with the maximum count. Finally, we will retrieve the description of that chapter. <answer> SELECT chapters.Description, COUNT(paragraphs.id) as paragraph_count FROM chapters JOIN paragraphs ON chapters.id = paragraphs.chapter_id GROUP BY chapters.id ORDER BY paragraph_count DESC LIMIT 1; </answer>",
+    "pred_SQL": "SELECT chapters.Description, COUNT(paragraphs.id) as paragraph_count FROM chapters JOIN paragraphs ON chapters.id = paragraphs.chapter_id GROUP BY chapters.id ORDER BY paragraph_count DESC LIMIT 1;",
+    "Target_SQL": "SELECT c.Description FROM chapters c JOIN paragraphs p ON p.chapter_id = c.id GROUP BY c.id, c.Description ORDER BY COUNT(p.id) DESC LIMIT 1;",
+    "Execution_Accuracy": "100",
+    "evaluation": "0"
+  },
+  {
+    "Input": "You are a SQL expert. Your task is to answer the user’s question by generating a final SQL query. The schema of the database is provided in the user question. You have access to a tool called `query_db` that you can use to run exploratory queries on the database. Use it only if needed to check values and validate assumptions. When you perform exploratory queries, use LIMIT 3 if the output of the query may have more than 3 rows. Eventually, provide ONLY the final SQL query enclosed within the tags <answer> and </answer>, not the answer to the query. Evidence: Twelfth Night refers to Title = 'Twelfth Night'. Question: How many scenes are there in Act 1 in Twelfth Night?.",
+    "Output": "[STEP]To determine how many scenes are there in Act 1 in *Twelfth Night*, we need to: 1. Identify the work ID of *Twelfth Night* from the `works` table. 2. Use that work ID to find the corresponding chapters in the `chapters` table. 3. Count the number of scenes in Act 1 (where `Act = 1`) from the `chapters` table. Here is the final SQL query to achieve this: <answer> SELECT COUNT(*) AS scene_count FROM chapters WHERE work_id = ( SELECT id FROM works WHERE Title = 'Twelfth Night' ) AND Act = 1; </answer>",
+    "pred_SQL": "SELECT COUNT(*) AS scene_count FROM chapters WHERE work_id = (SELECT id FROM works WHERE Title = 'Twelfth Night') AND Act = 1;",
+    "Target_SQL": "SELECT COUNT(*) as n_Scenes FROM works w JOIN chapters c ON c.work_id = w.id WHERE w.Title = 'Twelfth Night' AND c.Act = 1",
+    "Execution_Accuracy": "100",
+    "evaluation": "2"
+  },
+  {
+    "Input": "You are a SQL expert. Your task is to answer the user’s question by generating a final SQL query. The schema of the database is provided in the user question. You have access to a tool called `query_db` that you can use to run exploratory queries on the database. Use it only if needed to check values and validate assumptions. When you perform exploratory queries, use LIMIT 3 if the output of the query may have more than 3 rows. Eventually, provide ONLY the final SQL query enclosed within the tags <answer> and </answer>, not the answer to the query. Evidence: character \"Shylock\" refers to CharName = 'Shylock'. Question: Give the title of the work that contains the character \"Shylock\".",
+    "Output": "<answer> SELECT w.Title FROM works w JOIN chapters c ON w.id = c.work_id JOIN paragraphs p ON c.id = p.chapter_id JOIN characters ch ON p.character_id = ch.id WHERE ch.CharName = 'Shylock'; </answer>",
+    "pred_SQL": "SELECT w.Title FROM works w JOIN chapters c ON w.id = c.work_id JOIN paragraphs p ON c.id = p.chapter_id JOIN characters ch ON p.character_id = ch.id WHERE ch.CharName = 'Shylock';",
+    "Target_SQL": "SELECT DISTINCT w.Title FROM characters c JOIN paragraphs p ON c.id = p.character_id JOIN chapters ch ON p.chapter_id = ch.id JOIN works w ON ch.work_id = w.id WHERE c.CharName = 'Shylock';",
+    "Execution_Accuracy": "0",
+    "evaluation": "2"
+  },
+  {
+    "Input": "You are a SQL expert. Your task is to answer the user’s question by generating a final SQL query. The schema of the database is provided in the user question. You have access to a tool called `query_db` that you can use to run exploratory queries on the database. Use it only if needed to check values and validate assumptions. When you perform exploratory queries, use LIMIT 3 if the output of the query may have more than 3 rows. Eventually, provide ONLY the final SQL query enclosed within the tags <answer> and </answer>, not the answer to the query. Evidence: abbreviated name is 1Play; appeared first refers to Abbrev = '1Play' and min(chapter_id). Question: What is the description of the chapter where the character whose abrreviated name is 1Play appeared first?",
+    "Output": "[STEP]To find the description of the chapter where the character with the abbreviated name '1Play' appeared for the first time, we need to: 1. Identify the character with the abbreviated name '1Play'. 2. Find the chapter ID of that character. 3. Retrieve the description of that chapter. Here is the final SQL query to achieve this: <answer> SELECT c.Description FROM chapters c JOIN paragraphs p ON c.id = p.chapter_id JOIN characters ch ON p.character_id = ch.id WHERE ch.Abbrev = '1Play' LIMIT 1; </answer>",
+    "pred_SQL": "SELECT c.Description FROM chapters c JOIN paragraphs p ON c.id = p.chapter_id JOIN characters ch ON p.character_id = ch.id WHERE ch.Abbrev = '1Play' LIMIT 1",
+    "Target_SQL": "SELECT DISTINCT w.Title FROM characters c JOIN paragraphs p ON c.id = p.character_id JOIN chapters ch ON p.chapter_id = ch.id JOIN works w ON ch.work_id = w.id WHERE c.CharName = 'Shylock';",
+    "Execution_Accuracy": "100",
+    "evaluation": "2"
+  },
+  {
+    "Input": "You are a SQL expert. Your task is to answer the user’s question by generating a final SQL query. The schema of the database is provided in the user question. You have access to a tool called `query_db` that you can use to run exploratory queries on the database. Use it only if needed to check values and validate assumptions. When you perform exploratory queries, use LIMIT 3 if the output of the query may have more than 3 rows. Eventually, provide ONLY the final SQL query enclosed within the tags <answer> and </answer>, not the answer to the query. Evidence: characters name refers to CharName; most recent work refers to max(Date). Question: Give the title and the characters name of the most recent work of Shakespeare.",
+    "Output": "[STEP]To find the title and characters name of the most recent work of Shakespeare, we need to: 1. Identify the work with the maximum date (most recent work). 2. Find the character names associated with that work's chapters. We will first find the most recent work using the `works` table, then join with the `chapters` and `paragraphs` tables to get the character names. <answer> SELECT w.Title, c.CharName FROM works w JOIN chapters ch ON w.id = ch.work_id JOIN paragraphs p ON ch.id = p.chapter_id JOIN characters c ON p.character_id = c.id WHERE w.GenreType = 'Shakespeare' ORDER BY w.Date DESC LIMIT 1; </answer>",
+    "pred_SQL": "SELECT w.Title, c.CharName FROM works w JOIN chapters ch ON w.id = ch.work_id JOIN paragraphs p ON ch.id = p.chapter_id JOIN characters c ON p.character_id = c.id WHERE w.GenreType = 'Shakespeare' ORDER BY w.Date DESC LIMIT 1;",
+    "Target_SQL": "SELECT DISTINCT w.Title, ch.CharName FROM works w JOIN chapters c ON w.id = c.work_id JOIN paragraphs p ON p.chapter_id = c.id JOIN characters ch ON ch.id = p.character_id WHERE w.date = (SELECT MAX(date) FROM works w2)",
+    "Execution_Accuracy": "0",
+    "evaluation": "1"
+  }
+]

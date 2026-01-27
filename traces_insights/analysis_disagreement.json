@@ -1,0 +1,242 @@
+[
+    {
+        "question_id": "7709866479741293259",
+        "difficulty": "medium",
+        "pred_query_forced": "SELECT a.TAIL_NUM FROM Airlines a JOIN \"Air Carriers\" ac ON a.OP_CARRIER_AIRLINE_ID = ac.Code WHERE ac.Description = 'Asap Air Inc.: ASP' ORDER BY a.DEP_DELAY DESC LIMIT 1",
+        "pred_query_nf": "SELECT Airlines.TAIL_NUM FROM Airlines JOIN Air Carriers ON Air Carriers.Code = Airlines.OP_CARRIER_AIRLINE_ID WHERE Air Carriers.Description = 'Asap Air Inc.: ASP' ORDER BY Airlines.DEP_DELAY DESC LIMIT 1",
+        "winner": "f",
+        "category": "syntax",
+        "reason": "NF generated JOIN Air Carriers (no quotes), failing because of the space in the name. Forced tried, got a syntax error, and self-corrected by adding quotes (\"Air Carriers\").",
+        "rule": "If table/column names have spaces or special chars -> use tool to validate syntax (quoting)."
+    },
+    {
+        "question_id": "-3839649462332200142",
+        "difficulty": "challenging",
+        "pred_query_forced": "SELECT t.CreditCardType, COUNT(*) AS purchase_count FROM \"transaction\" t JOIN rootbeer r ON t.RootBeerID = r.RootBeerID JOIN rootbeerbrand rb ON r.BrandID = rb.BrandID WHERE rb.Alcoholic = 'FALSE' GROUP BY t.CreditCardType ORDER BY purchase_count DESC LIMIT 1",
+        "pred_query_nf": "SELECT t.CreditCardType, COUNT(*) AS usage_count FROM transaction AS t JOIN rootbeer AS r ON t.RootBeerID = r.RootBeerID JOIN rootbeerbrand AS rb ON r.BrandID = rb.BrandID WHERE rb.Alcoholic = 'FALSE' GROUP BY t.CreditCardType ORDER BY usage_count DESC LIMIT 1;",
+        "winner": "f",
+        "category": "reserved keyword",
+        "reason": "The table name is transaction, which is a reserved SQL keyword. NF failed because it didn't quote it. Forced saw the syntax error and fixed it by adding quotes.",
+        "rule": "If table names are SQL keywords (Order, User, Group, Transaction) -> use tool to validate quoting."
+    },
+    {
+        "question_id": "-2909114331836883209",
+        "difficulty": "simple",
+        "pred_query_forced": "SELECT first_name, last_name FROM customer WHERE email = 'aalleburtonkc@yellowbook.com'",
+        "pred_query_nf": "SELECT CONCAT(first_name, ' ', last_name) AS full_name FROM customer WHERE email = 'aalleburtonkc@yellowbook.com'",
+        "winner": "f",
+        "category": "output format",
+        "reason": "NF tried to be \"helpful\" by using CONCAT to merge First and Last name into one string. The Target Query expected two separate columns. The Forced agent won because its exploratory query was simple and it stuck with that simple, correct format for the final answer.",
+        "rule": "If the user asks for a composite concept (Full Name, Address) -> Select the individual columns separately. DO NOT use formatting functions like CONCAT unless explicitly asked."
+    },
+    {
+        "question_id": "4117959910818499888",
+        "difficulty": "challenging",
+        "pred_query_forced": "SELECT      (COUNT(CASE WHEN iucr.secondary_description LIKE '%CANNABIS%' THEN 1 ELSE NULL END) * 100.0 / COUNT(*)) AS cannabis_percentage FROM Crime JOIN FBI_Code ON Crime.fbi_code_no = FBI_Code.fbi_code_no JOIN IUCR ON Crime.iucr_no = IUCR.iucr_no WHERE FBI_Code.title = 'Drug Abuse'",
+        "pred_query_nf": "SELECT      (COUNT(CASE WHEN c.secondary_description LIKE '%CANNABIS%' THEN 1 END) * 100.0 / COUNT(*)) AS cannabis_percentage FROM FBI_Code f JOIN IUCR i ON f.fbi_code_no = i.fbi_code_no JOIN Crime c ON i.iucr_no = c.iucr_no WHERE f.title = 'Drug Abuse';",
+        "winner": "f",
+        "category": "schema ambiguity",
+        "reason": "NF assumed secondary_description belonged to the Crime table. It is actually in the IUCR table. Forced made the same mistake, got a no such column error, and reasoned that it must be in the linked IUCRtable instead.",
+        "rule": " If joining tables with ambiguous column names (e.g. id1, id2, dummy, related_id), make a test query. If the initial join returns 0 rows, the agent must swap the foreign keys and try again"
+    },
+    {
+        "question_id": "-7227654148314132109",
+        "difficulty": "medium",
+        "pred_query_forced": "SELECT p.yearsInProgram FROM person p JOIN advisedBy ab ON p.p_id = ab.p_id WHERE p.student = 1 GROUP BY p.p_id HAVING COUNT(DISTINCT ab.p_id_dummy) > 2",
+        "pred_query_nf": "SELECT p.yearsInProgram FROM person p JOIN advisedBy ab ON p.p_id = ab.p_id_dummy WHERE p.student = 1 GROUP BY p.p_id HAVING COUNT(ab.p_id) > 2",
+        "winner": "f",
+        "category": "schema ambiguity",
+        "reason": "The link table advisedBy has unclear columns. NF guessed the wrong join direction and got an empty result. Forced tried the wrong join first, saw (no rows), and used that signal to flip the join logic (p_id = student), which worked.",
+        "rule": ""
+    },
+    {
+        "question_id": "4358512743082730731",
+        "difficulty": "challenging",
+        "pred_query_forced": "SELECT tb.p_id, p.hasPosition FROM taughtBy tb JOIN person p ON tb.p_id = p.p_id GROUP BY tb.p_id, p.hasPosition ORDER BY COUNT(*) DESC LIMIT 1;",
+        "pred_query_nf": "SELECT p.hasPosition FROM person p WHERE p.p_id = (     SELECT t.p_id     FROM taughtBy t     GROUP BY t.p_id     ORDER BY COUNT(*) DESC     LIMIT 1 )",
+        "winner": "f",
+        "category": "output format",
+        "reason": "NF correctly found the max courses logic but forgot to select the professor's ID, returning only the position . Forced won because its first tool call explicitly isolated the ID (331), making it obvious that the final answer needed to include that ID to be complete.",
+        "rule": ""
+    },
+    {
+        "question_id": "-2019613960285098783",
+        "difficulty": "challenging",
+        "pred_query_forced": "SELECT d.name AS movie_title FROM director d JOIN movies_total_gross m ON d.name = m.movie_title WHERE d.director = 'Ron Clements' ORDER BY CAST(REPLACE(REPLACE(m.total_gross, '$', ''), ',', '') AS INTEGER) DESC LIMIT 1",
+        "pred_query_nf": "SELECT d.name FROM director d JOIN movies_total_gross m ON d.name = m.movie_title WHERE d.director = 'Ron Clements' ORDER BY CAST(m.total_gross AS INTEGER) DESC LIMIT 1",
+        "winner": "f",
+        "category": "input format",
+        "reason": "NF correctly tried to CAST to Integer, but failed to strip the $ and , characters, likely causing the cast to fail (returning 0) or error out. Forced examined the data, saw the symbols, and added REPLACE logic to clean the string before casting.",
+        "rule": "If the column represents currency or formatted numbers but is stored as TEXT, do an exploratory query to check for symbols ($, ,). If present, you must strip them before sorting/aggregating."
+    },
+    {
+        "question_id": "3394012393753861868",
+        "difficulty": "medium",
+        "pred_query_forced": "SELECT COUNT(DISTINCT team) FROM (SELECT HomeTeam AS team FROM matchs WHERE Div = 'N1' AND season = 2008 UNION SELECT AwayTeam AS team FROM matchs WHERE Div = 'N1' AND season = 2008) AS teams;",
+        "pred_query_nf": "SELECT COUNT(DISTINCT team) FROM (     SELECT HomeTeam AS team     FROM matchs     WHERE Div = 'Eredivisie' AND season = 2008     UNION     SELECT AwayTeam AS team     FROM matchs     WHERE Div = 'Eredivisie' AND season = 2008 ) AS teams;",
+        "winner": "f",
+        "category": "input format",
+        "reason": "NF tried to filter using the full natural language name ('Eredivisie'). The database required a specific internal code ('N1'). Forced won because it looked up the correct input format in the reference table.",
+        "rule": "If you need to filter by a specific value and there is any uncertainty about how that value is stored (e.g., Code vs. Name, specific Date format, Case sensitivity), DO NOT GUESS. Make an exploratory query (like SELECT DISTINCT or a lookup) to see the actual data format first."
+    },
+    {
+        "question_id": "-8753465943587267913",
+        "difficulty": "challenging",
+        "pred_query_forced": "SELECT COUNT(*) as draw_count FROM matchs m JOIN divisions d ON m.Div = d.division WHERE d.name = 'Scottish Championship' AND m.season = 2019 AND m.FTHG = 2 AND m.FTAG = 2",
+        "pred_query_nf": "SELECT COUNT(*) AS draw_count FROM matchs WHERE Div = 'Scottish Championship' AND season = 2019 AND FTHG = 2 AND FTAG = 2",
+        "winner": "f",
+        "category": "input format",
+        "reason": "NF assumed the main table was denormalized. It queried WHERE Div = 'Scottish Championship', which returned 0 rows. Forced verified the divisions table and correctly joined them to filter by the full name",
+        "rule": "If you need to filter by a specific value and there is any uncertainty about how that value is stored (e.g., Code vs. Name, specific Date format, Case sensitivity), DO NOT GUESS. Make an exploratory query (like SELECT DISTINCT or a lookup) to see the actual data format first."
+    },
+    {
+        "question_id": "558113303518237446",
+        "difficulty": "challenging",
+        "pred_query_forced": "SELECT HomeTeam FROM matchs WHERE Div = 'D1' AND season = 2021 ORDER BY FTHG DESC LIMIT 1",
+        "pred_query_nf": "SELECT HomeTeam, SUM(FTHG) AS total_goals FROM matchs WHERE Div = 'Bundesliga' AND season = 2021 GROUP BY HomeTeam ORDER BY total_goals DESC LIMIT 1;",
+        "winner": "f",
+        "category": "input format",
+        "reason": "NF filtered by Div = 'Bundesliga' (Name) instead of Div = 'D1' (Code).",
+        "rule": "If you need to filter by a specific value and there is any uncertainty about how that value is stored (e.g., Code vs. Name, specific Date format, Case sensitivity), DO NOT GUESS. Make an exploratory query (like SELECT DISTINCT or a lookup) to see the actual data format first."
+    },
+    {
+        "question_id": "-9089899048768438243",
+        "difficulty": "challenging",
+        "pred_query_forced": "SELECT l.address, l.locationcity, l.state, l.zipcode FROM employee e JOIN position p ON e.positionID = p.positionID JOIN location l ON e.locationID = l.locationID WHERE p.positiontitle = 'Manager' AND e.salary = (     SELECT MAX(salary)     FROM employee     JOIN position ON employee.positionID = position.positionID     WHERE position.positiontitle = 'Manager' )",
+        "pred_query_nf": "SELECT l.address, l.locationcity, l.state, l.zipcode FROM employee e JOIN position p ON e.positionID = p.positionID JOIN location l ON e.locationID = l.locationID WHERE p.positiontitle = 'Manager' AND e.salary = (     SELECT MAX(CAST(salary AS INTEGER))     FROM employee e2     JOIN position p2 ON e2.positionID = p2.positionID     WHERE p2.positiontitle = 'Manager' )",
+        "winner": "f",
+        "category": "input format",
+        "reason": "NF tried to fix the text-salary issue by casting to int, but failed to strip the $ and , symbols first.  Forced followed the prompt literally (MAX(salary)without cast), which avoided the crash and happened to match the target's sorting logic.",
+        "rule": "If the task requires Math (SUM, AVG) or Numeric Sorting (Highest, Lowest) on a column defined as TEXT or VARCHAR, do not cast it blindly. Make an exploratory query to check the data format. If symbols ($, %, ,) are found, generate SQL to clean them before casting."
+    },
+    {
+        "question_id": "-7195398145024220579",
+        "difficulty": "medium",
+        "pred_query_forced": "SELECT twitter_id FROM \"social-media\" WHERE bioguide = 'C001061' LIMIT 1",
+        "pred_query_nf": "SELECT s.twitter_id FROM current AS c JOIN social_media AS s ON c.bioguide_id = s.bioguide WHERE c.first_name = 'Emanuel' AND c.last_name = 'Cleaver'",
+        "winner": "f",
+        "category": "syntax",
+        "reason": "The table name is social-media. In SQL, a hyphen is the \"minus\" operator. NF \"hallucinated\" a clean name (social_media with an underscore) to make it valid SQL, but that table doesn't exist. Forced tried social-media (unquoted), got an error, and self-corrected by adding quotes.",
+        "rule": "If a table or column name contains Hyphens, Spaces, or Dots, DO NOT autocorrect it to an underscore. Make a syntax check to ensure you are quoting it correctly."
+    },
+    {
+        "question_id": "6758643250083549908",
+        "difficulty": "medium",
+        "pred_query_forced": "SELECT c.official_full_name FROM current c JOIN `current-terms` ct ON c.bioguide_id = ct.bioguide WHERE ct.party = 'Republican' AND ct.state_rank = 'junior'",
+        "pred_query_nf": "SELECT c.official_full_name FROM current AS c JOIN current-terms AS ct ON c.bioguide_id = ct.bioguide WHERE ct.state_rank = 'junior' AND ct.party = 'Republican'",
+        "winner": "f",
+        "category": "syntax",
+        "reason": "The table name is current-terms. NF tried to execute current-terms unquoted, which SQL interprets as subtraction. Forced initially tried current_terms (underscore), got a \"no such table\" error, then tried current-terms and likely got a syntax error before finally self-correcting to use backticks `current-terms` or quotes.",
+        "rule": "If table names contain hyphens (-), make an exploratory query. Do not assume underscores or unquoted usage. You MUST use quotes (\"table-name\") or backticks (`table-name`)."
+    },
+    {
+        "question_id": "-4610203780484840344",
+        "difficulty": "medium",
+        "pred_query_forced": "SELECT gender_bio FROM current WHERE bioguide_id = 'M000355'",
+        "pred_query_nf": "SELECT c.gender_bio FROM current AS c JOIN current-terms AS ct ON c.bioguide_id = ct.bioguide WHERE ct.address = '317 Russell Senate Office Building Washington DC 20510' LIMIT 1",
+        "winner": "f",
+        "category": "syntax",
+        "reason": "The table current-terms has a hyphen. NF failed silently (likely syntax error). Forced failed 4 times, mistakenly thinking the hyphen in the address string was the problem, before finally realizing the table name needed quotes ",
+        "rule": "If table names contain hyphens (-), make an exploratory query. Do not assume underscores or unquoted usage. You MUST use quotes (\"table-name\") or backticks (`table-name`)."
+    },
+    {
+        "question_id": "2534198631643220289",
+        "difficulty": "medium",
+        "pred_query_forced": "SELECT AVG(CAST(REPLACE(\"Unit Price\", ',', '') AS REAL)) AS avg_unit_price FROM \"Sales Orders\" JOIN Products ON \"Sales Orders\"._ProductID = Products.ProductID WHERE Products.\"Product Name\" = 'Cookware'",
+        "pred_query_nf": "SELECT AVG(CAST(\"Unit Price\" AS REAL)) AS AvgUnitPrice FROM Products JOIN \"Sales Orders\" ON Products.ProductID = \"Sales Orders\".ProductID WHERE Products.\"Product Name\" = 'Cookware';",
+        "winner": "f",
+        "category": "input format",
+        "reason": "NF correctly handled the table name syntax (\"Sales Orders\") but failed to inspect the data content. It ran CAST(Unit Price AS REAL) on string data containing commas (1,038.50), which corrupts the math. Forced inspected the data, saw the commas, and added REPLACE(..., ',', '').",
+        "rule": "If performing math (AVG, SUM) on a Text column, NEVER cast blindly. FORCE a sample query to check for non-numeric characters (commas, currency symbols) and generate cleaning logic (REPLACE) if they exist"
+    },
+    {
+        "question_id": "-5562869458611672829",
+        "difficulty": "simple",
+        "pred_query_forced": "SELECT DISTINCT city FROM geographic WHERE county LIKE '%San Mateo%'",
+        "pred_query_nf": "SELECT DISTINCT city FROM geographic WHERE county = 'San Mateo'",
+        "winner": "f",
+        "category": "input format",
+        "reason": "NF failed because it assumed the data followed standard naming conventions, but the database stored the values in lowercase with a suffix. Forced initially made the same assumption, but after receiving 0 rows, it successfully self-corrected by using a wildcard query (LIKE '%San Mateo%') to identify the correct string format.",
+        "rule": "Verify the format of string data (case, suffixes) in the database before applying exact filters."
+    },
+    {
+        "question_id": "-7902936785988867185",
+        "difficulty": "challenging",
+        "pred_query_forced": "SELECT    (SUM(CASE WHEN c.priority = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) AS percentage FROM callcenterlogs c JOIN events e ON c.\"Complaint ID\" = e.\"Complaint ID\" JOIN client cl ON e.Client_ID = cl.client_id JOIN district d ON cl.district_id = d.district_id JOIN state st ON d.state_abbrev = st.StateCode WHERE st.State = 'California';",
+        "pred_query_nf": "SELECT      (COUNT(CASE WHEN priority = 1 THEN 1 END) * 100.0 / COUNT(*)) AS percentage FROM callcenterlogs JOIN events ON callcenterlogs.\"Complaint ID\" = events.\"Complaint ID\" JOIN client ON events.Client_ID = client.client_id WHERE client.state = 'California'",
+        "winner": "f",
+        "category": "schema ambiguity",
+        "reason": "NF failed due to schema hallucination; it assumed a join path through an events table and a state column in the client table. Forced successfully used tools to discover the actual normalized path (client -> district -> state) and the correct foreign key (rand client).",
+        "rule": "Use tools to inspect foreign keys and verify the join path instead of assuming direct column access."
+    },
+    {
+        "question_id": "1956399159311461969",
+        "difficulty": "challenging",
+        "pred_query_forced": "SELECT e.FirstName, e.LastName FROM Employees e JOIN Orders o ON e.EmployeeID = o.EmployeeID GROUP BY e.EmployeeID ORDER BY COUNT(o.OrderID) DESC LIMIT 1",
+        "pred_query_nf": "SELECT CONCAT(e.FirstName, ' ', e.LastName) AS FullName FROM Employees e JOIN Orders o ON e.EmployeeID = o.EmployeeID GROUP BY e.EmployeeID ORDER BY COUNT(o.OrderID) DESC LIMIT 1",
+        "winner": "f",
+        "category": "output format",
+        "reason": "NF generated CONCAT(FirstName, ' ', LastName), failing because the ground truth required separate FirstName and LastName columns. Forced verified the ID first, then correctly selected the columns separately.",
+        "rule": "If a term refers to multiple columns -> select the columns individually (col1, col2) rather than concatenating (CONCAT), unless explicitly requested."
+    },
+    {
+        "question_id": "1418888055900529930",
+        "difficulty": "simple",
+        "pred_query_forced": "SELECT DISTINCT Type FROM SpecialOffer WHERE Category = 'Reseller'",
+        "pred_query_nf": "SELECT DISTINCT Category FROM SpecialOffer WHERE Type = 'Group'",
+        "winner": "f",
+        "category": "input format",
+        "reason": "NF assumed \"group discounts\" corresponded to a literal value Type = 'Group', which did not exist. Forced used tools to inspect the table data, identifying that the relevant column is Type and that Reseller offers correspond to values like \"Volume Discount\".",
+        "rule": "If a natural language term does not match a defined value -> use tools to inspect DISTINCT column values to find the correct semantic match rather than guessing a literal string."
+    },
+    {
+        "question_id": "6989826673004938896",
+        "difficulty": "medium",
+        "pred_query_forced": "SELECT DISTINCT mp.page_number FROM Dish d JOIN MenuItem mi ON d.id = mi.dish_id JOIN MenuPage mp ON mi.menu_page_id = mp.id WHERE d.name = 'Chicken gumbo' AND mp.page_number IS NOT NULL;",
+        "pred_query_nf": "SELECT DISTINCT mp.page_number FROM MenuPage AS mp JOIN MenuItem AS mi ON mp.id = mi.menu_page_id JOIN Dish AS d ON mi.dish_id = d.id WHERE d.name = 'Chicken gumbo'",
+        "winner": "nf",
+        "category": "overcorrection",
+        "reason": "Forced observed NULL values in the tool execution results, and \"self-corrected\" by adding an unrequested AND page_number IS NOT NULL filter. NF adhered strictly to the prompt logic without inspecting data, matching the ground truth which allowed NULLs.",
+        "rule": "If tool execution reveals NULL or \"dirty\" data -> do not add filters (e.g., IS NOT NULL) to clean the output unless explicitly requested; the ground truth often expects raw data retrieval including potential nulls."
+    },
+    {
+        "question_id": "-8884667328324897652",
+        "difficulty": "challenging",
+        "pred_query_forced": "SELECT s.sport_name FROM person p JOIN competitor_event ce ON p.id = ce.competitor_id JOIN event e ON ce.event_id = e.id JOIN sport s ON e.sport_id = s.id WHERE p.full_name = 'John Aalberg'",
+        "pred_query_nf": "SELECT s.sport_name FROM sport s JOIN event e ON s.id = e.sport_id JOIN competitor_event ce ON e.id = ce.event_id JOIN games_competitor gc ON ce.competitor_id = gc.id JOIN person p ON gc.person_id = p.id WHERE p.full_name = 'John Aalberg' LIMIT 1",
+        "winner": "nf",
+        "category": "input format",
+        "reason": "Forced hallucinated a direct join between person and competitor_event (p.id = ce.competitor_id), skipping the necessary intermediate table games_competitor. The tool execution yielded a \"false positive\" result, which misled the model into believing the incorrect path was valid.",
+        "rule": "When joining entities, do not assume a direct foreign key exists; always check the schema for intermediate linking tables to ensure the logical path is correct, even if a direct join coincidently returns data."
+    },
+    {
+        "question_id": "8062255419632833147",
+        "difficulty": "challenging",
+        "pred_query_forced": "SELECT ginfo.food_type FROM location l JOIN geographic g ON l.city = g.city JOIN generalinfo ginfo ON l.id_restaurant = ginfo.id_restaurant WHERE l.street_num = 3140 AND l.street_name = 'alpine rd' AND g.county = 'san mateo county' LIMIT 1",
+        "pred_query_nf": "SELECT g.food_type FROM generalinfo AS g JOIN location AS l ON g.id_restaurant = l.id_restaurant JOIN geographic AS geo ON l.city = geo.city WHERE l.street_num = 3140 AND l.street_name = 'alpine rd' AND geo.county = 'san mateo county'",
+        "winner": "nf",
+        "category": "logic",
+        "reason": "Forced observed a single result during tool execution and \"overfitted\" by adding an unrequested LIMIT 1 clause. NF correctly generated a general query without the limit, matching the ground truth.",
+        "rule": "Do not add LIMIT 1 in the final SQL answer unless the question involves superlatives (e.g., \"highest\", \"most\") or explicit ranking. For general retrieval questions (\"What is the X...\"), return all matching rows."
+    },
+    {
+        "question_id": "-5548079367537547702",
+        "difficulty": "medium",
+        "pred_query_forced": "SELECT COUNT(*) AS TeenagersCount FROM (     SELECT c.age     FROM (         SELECT REFID, RESPONSE, REF_DATE         FROM Mailings1_2         UNION ALL         SELECT REFID, RESPONSE, REF_DATE         FROM mailings3     ) AS m     JOIN Customers c ON m.REFID = c.ID     WHERE m.RESPONSE = 'true'     ORDER BY m.REF_DATE     LIMIT 60000 ) AS sub WHERE age BETWEEN 13 AND 19",
+        "pred_query_nf": "SELECT COUNT(*) AS teenager_count FROM (     SELECT c.*     FROM Customers AS c     JOIN Mailings1_2 AS m ON c.ID = m.REFID     WHERE m.RESPONSE = 'true'     ORDER BY m.REF_DATE     LIMIT 60000 ) AS first_60k WHERE age BETWEEN 13 AND 19",
+        "winner": "nf",
+        "category": "input format",
+        "reason": "Forced saw multiple similar tables (Mailings1_2, mailings3) in the schema tool and assumed it needed to UNION them to get a \"complete\" answer. NF correctly stuck to the single table (Mailings1_2) implied by the singular phrasing in the prompt.",
+        "rule": "If the prompt refers to a singular entity but the schema contains multiple similar tables, do not automatically UNION them. Select the most relevant/primary table unless the prompt explicitly asks to combine all sources."
+    },
+    {
+        "question_id": "823721417567848367",
+        "difficulty": "medium",
+        "pred_query_forced": "SELECT ROUND((u.num_students * u.pct_female_students) / 100) AS female_students FROM university_year u JOIN university uni ON u.university_id = uni.id WHERE uni.university_name = 'Stanford University' AND u.year = 2011",
+        "pred_query_nf": "SELECT (uyp.pct_female_students * uyp.num_students) / 100.0 AS female_students FROM university AS u JOIN university_year AS uyp ON u.id = uyp.university_id WHERE u.university_name = 'Stanford University' AND uyp.year = 2011",
+        "winner": "nf",
+        "category": "input format",
+        "reason": "Forced added an unrequested ROUND() function to the calculation. The ground truth expected the exact floating-point result derived from the prompt's strict formula.",
+        "rule": "If a prompt provides a specific mathematical formula (e.g., DIVIDE(a * b, 100)), implement it exactly in SQL. Do not apply semantic rounding unless explicitly requested, as benchmarks often check for the raw calculated value."
+    }
+]
